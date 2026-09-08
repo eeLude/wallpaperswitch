@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wallpaperswitch"
+version = "1.0.0"
+description = "An aesthetic, minimalist desktop wallpaper dock for Windows"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "WallpaperSwitch Contributors" }
+]
+keywords = ["wallpaper", "windows", "desktop", "hotkey", "dock", "pyqt6"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Desktop Environment",
+]
+dependencies = [
+    "PyQt6>=6.6.0",
+    "Pillow>=10.0.0",
+    "pynput>=1.7.6",
+]
+
+[project.scripts]
+wallpaperswitch = "wallpaperswitch.app:run_app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
