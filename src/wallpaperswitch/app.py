@@ -54,10 +54,28 @@ def run_app():
 
     tray.folder_changed.connect(on_folder_changed)
 
-    hotkey = config.get("hotkey", "alt+shift")
-    hotkey_mgr = HotkeyManager(hotkey)
+    hotkey = config.get("hotkey", "alt+shift+w")
+    enable_hotkey = config.get("enable_hotkey", True)
+    enable_double_click = config.get("desktop_double_click", True)
+
+    hotkey_mgr = HotkeyManager(
+        hotkey_str=hotkey,
+        enable_hotkey=enable_hotkey,
+        enable_double_click=enable_double_click,
+    )
     hotkey_mgr.emitter.triggered.connect(overlay.toggle_visibility)
     hotkey_mgr.start()
+
+    def on_settings_changed():
+        logger.info("Settings changed, reloading input listeners...")
+        cfg = load_config()
+        hotkey_mgr.stop()
+        hotkey_mgr.hotkey_str = cfg.get("hotkey", "alt+shift+w").strip().lower()
+        hotkey_mgr.enable_hotkey = cfg.get("enable_hotkey", True)
+        hotkey_mgr.enable_double_click = cfg.get("desktop_double_click", True)
+        hotkey_mgr.start()
+
+    tray.settings_changed.connect(on_settings_changed)
 
     def on_exit():
         logger.info("Exiting WallpaperSwitch...")
@@ -67,9 +85,7 @@ def run_app():
 
     tray.exit_requested.connect(on_exit)
 
-    # Initially display dock so user immediately sees it
-    overlay.show_dock()
-
+    # Start silently in the background (only show when hotkey is triggered or from tray)
     exit_code = app.exec()
 
     # Release Win32 mutex handle on clean exit

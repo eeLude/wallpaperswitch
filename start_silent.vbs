@@ -2,9 +2,9 @@ Set WshShell = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
 
 currentDir = fso.GetParentFolderName(WScript.ScriptFullName)
+WshShell.CurrentDirectory = currentDir
 mainScript = """" & currentDir & "\main.py"""
 
-' Check for pythonw in common locations, fallback to pythonw on PATH
 pythonw = "pythonw.exe"
 If fso.FileExists("C:\Python314\pythonw.exe") Then
     pythonw = """C:\Python314\pythonw.exe"""

@@ -1,7 +1,10 @@
 import logging
+import time
 from typing import Optional
-from pynput import keyboard
+from pynput import keyboard, mouse
 from PyQt6.QtCore import QObject, pyqtSignal
+
+from wallpaperswitch.desktop_detector import is_empty_desktop, get_system_double_click_time
 
 logger = logging.getLogger("WallpaperSwitch")
 
@@ -17,53 +20,105 @@ class HotkeyEmitter(QObject):
     triggered = pyqtSignal()
 
 
-class HotkeyManager:
+class DesktopMouseListener:
     """
-    Global keyboard listener.
-    Supports pure modifier combos like 'alt+shift' as well as standard combos like '<alt>+<shift>+w'.
+    Listens for double-clicks on empty desktop wallpaper space.
+    Completely ignores clicks inside games, open applications, or desktop icons.
     """
 
-    def __init__(self, hotkey_str: str = "alt+shift"):
+    def __init__(self, callback):
+        self.callback = callback
+        self.last_click_time = 0.0
+        self.last_click_pos = (0, 0)
+        self.double_click_threshold = get_system_double_click_time()
+        self._listener: Optional[mouse.Listener] = None
+
+    def start(self):
+        """Start global mouse listener in background thread."""
+        try:
+            self._listener = mouse.Listener(on_click=self._on_click)
+            self._listener.daemon = True
+            self._listener.start()
+            logger.info("Desktop double-click listener active")
+        except Exception as e:
+            logger.error(f"Failed to start desktop mouse listener: {e}")
+
+    def _on_click(self, x, y, button, pressed):
+        if button == mouse.Button.left and pressed:
+            now = time.time()
+            dt = now - self.last_click_time
+            dx = abs(x - self.last_click_pos[0])
+            dy = abs(y - self.last_click_pos[1])
+            self.last_click_time = now
+            self.last_click_pos = (x, y)
+
+            if dt <= self.double_click_threshold and dx <= 6 and dy <= 6:
+                # Reset so triple-click doesn't double-fire
+                self.last_click_time = 0.0
+                if is_empty_desktop(x, y):
+                    logger.debug("Desktop double-click detected on empty wallpaper space")
+                    self.callback()
+
+    def stop(self):
+        if self._listener:
+            try:
+                self._listener.stop()
+            except Exception as e:
+                logger.debug(f"Error stopping desktop mouse listener: {e}")
+            self._listener = None
+
+
+class HotkeyManager:
+    """
+    Global input manager supporting both desktop double-click and keyboard hotkeys.
+    """
+
+    def __init__(
+        self,
+        hotkey_str: str = "alt+shift+w",
+        enable_hotkey: bool = True,
+        enable_double_click: bool = True,
+    ):
         self.hotkey_str = hotkey_str.strip().lower()
+        self.enable_hotkey = enable_hotkey
+        self.enable_double_click = enable_double_click
         self.emitter = HotkeyEmitter()
 
         self._listener: Optional[keyboard.Listener] = None
         self._global_hotkeys: Optional[keyboard.GlobalHotKeys] = None
+        self._mouse_listener: Optional[DesktopMouseListener] = None
 
         self._alt_down = False
         self._shift_down = False
         self._triggered = False
 
     def start(self):
-        """Start listening in background thread."""
-        clean_key = self.hotkey_str.replace(" ", "")
+        """Start configured listeners in background threads."""
+        if self.enable_double_click:
+            self._mouse_listener = DesktopMouseListener(self._on_triggered)
+            self._mouse_listener.start()
 
-        if clean_key in ("alt+shift", "shift+alt"):
-            # Stateful modifier tracking for Alt+Shift
-            self._listener = keyboard.Listener(
-                on_press=self._on_press,
-                on_release=self._on_release,
-            )
-            self._listener.daemon = True
-            self._listener.start()
-            logger.info("Hotkey listener active for Alt+Shift")
-        else:
-            formatted = self._format_for_pynput(clean_key)
-            try:
-                self._global_hotkeys = keyboard.GlobalHotKeys(
-                    {formatted: self._on_triggered}
-                )
-                self._global_hotkeys.daemon = True
-                self._global_hotkeys.start()
-                logger.info(f"Hotkey listener active for {formatted}")
-            except Exception as e:
-                logger.warning(f"Failed to bind hotkey {formatted}: {e}. Falling back to Alt+Shift.")
+        if self.enable_hotkey and self.hotkey_str:
+            clean_key = self.hotkey_str.replace(" ", "")
+            if clean_key in ("alt+shift", "shift+alt"):
                 self._listener = keyboard.Listener(
                     on_press=self._on_press,
                     on_release=self._on_release,
                 )
                 self._listener.daemon = True
                 self._listener.start()
+                logger.info("Hotkey listener active for Alt+Shift")
+            else:
+                formatted = self._format_for_pynput(clean_key)
+                try:
+                    self._global_hotkeys = keyboard.GlobalHotKeys(
+                        {formatted: self._on_triggered}
+                    )
+                    self._global_hotkeys.daemon = True
+                    self._global_hotkeys.start()
+                    logger.info(f"Hotkey listener active for {formatted}")
+                except Exception as e:
+                    logger.warning(f"Failed to bind hotkey {formatted}: {e}")
 
     def _format_for_pynput(self, key_str: str) -> str:
         parts = key_str.split("+")
@@ -98,6 +153,10 @@ class HotkeyManager:
         self.emitter.triggered.emit()
 
     def stop(self):
+        if self._mouse_listener:
+            self._mouse_listener.stop()
+            self._mouse_listener = None
+
         if self._listener:
             try:
                 self._listener.stop()

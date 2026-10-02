@@ -84,6 +84,7 @@ class TrayApp(QObject):
     toggle_requested = pyqtSignal()
     folder_changed = pyqtSignal(str)
     refresh_requested = pyqtSignal()
+    settings_changed = pyqtSignal()
     exit_requested = pyqtSignal()
 
     def __init__(self, parent=None):
@@ -91,10 +92,14 @@ class TrayApp(QObject):
         self.config = load_config()
         self.tray_icon = QSystemTrayIcon(parent)
         self.tray_icon.setIcon(create_tray_icon())
-        self.tray_icon.setToolTip(f"Wallpaper Switcher ({self.config.get('hotkey', 'Alt+Shift').upper()})")
+        self._update_tooltip()
 
         self._build_menu()
         self.tray_icon.activated.connect(self._on_tray_activated)
+
+    def _update_tooltip(self):
+        hotkey_str = self.config.get("hotkey", "Alt+Shift+W").upper()
+        self.tray_icon.setToolTip(f"Wallpaper Switcher (Double-Click Desktop / {hotkey_str})")
 
     def _build_menu(self):
         menu = QMenu()
@@ -118,7 +123,7 @@ class TrayApp(QObject):
             """
         )
 
-        hotkey_display = self.config.get("hotkey", "Alt+Shift").upper()
+        hotkey_display = self.config.get("hotkey", "Alt+Shift+W").upper()
         act_toggle = menu.addAction(f"Toggle Wallpapers ({hotkey_display})")
         act_toggle.triggered.connect(self.toggle_requested.emit)
 
@@ -133,6 +138,12 @@ class TrayApp(QObject):
         act_refresh.triggered.connect(self.refresh_requested.emit)
 
         menu.addSeparator()
+
+        act_double_click = QAction("Double-Click Desktop to Open", menu)
+        act_double_click.setCheckable(True)
+        act_double_click.setChecked(self.config.get("desktop_double_click", True))
+        act_double_click.toggled.connect(self._toggle_double_click)
+        menu.addAction(act_double_click)
 
         act_startup = QAction("Run at Windows Startup", menu)
         act_startup.setCheckable(True)
@@ -172,6 +183,11 @@ class TrayApp(QObject):
                 save_config(self.config)
                 self._build_menu()
                 self.folder_changed.emit(str(selected_path))
+
+    def _toggle_double_click(self, checked: bool):
+        self.config["desktop_double_click"] = checked
+        save_config(self.config)
+        self.settings_changed.emit()
 
     def _toggle_startup(self, checked: bool):
         set_run_at_startup(checked)

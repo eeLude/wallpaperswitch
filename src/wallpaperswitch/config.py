@@ -7,7 +7,9 @@ logger = logging.getLogger("WallpaperSwitch")
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     "wallpaper_folder": r"D:\Wallpapers",
-    "hotkey": "alt+shift",
+    "hotkey": "alt+shift+w",
+    "enable_hotkey": True,
+    "desktop_double_click": True,
     "card_width": 140,
     "card_height": 230,
     "card_radius": 12,
@@ -49,9 +51,11 @@ def sanitize_config(data: dict) -> dict:
     cfg["close_on_select"] = safe_bool("close_on_select", True)
     cfg["smooth_scroll"] = safe_bool("smooth_scroll", True)
     cfg["auto_start"] = safe_bool("auto_start", False)
+    cfg["desktop_double_click"] = safe_bool("desktop_double_click", True)
+    cfg["enable_hotkey"] = safe_bool("enable_hotkey", True)
 
-    hotkey_raw = data.get("hotkey", "alt+shift")
-    cfg["hotkey"] = str(hotkey_raw).strip().lower() if hotkey_raw else "alt+shift"
+    hotkey_raw = data.get("hotkey", "alt+shift+w")
+    cfg["hotkey"] = str(hotkey_raw).strip().lower() if hotkey_raw else "alt+shift+w"
 
     folder_raw = data.get("wallpaper_folder", r"D:\Wallpapers")
     cfg["wallpaper_folder"] = str(folder_raw).strip() if folder_raw else r"D:\Wallpapers"

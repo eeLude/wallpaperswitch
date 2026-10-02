@@ -1,6 +1,8 @@
 {
     "wallpaper_folder": "D:\\Wallpapers",
-    "hotkey": "alt+shift",
+    "hotkey": "alt+shift+w",
+    "enable_hotkey": true,
+    "desktop_double_click": true,
     "card_width": 140,
     "card_height": 230,
     "card_radius": 12,

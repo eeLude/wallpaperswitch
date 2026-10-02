@@ -6,7 +6,8 @@ An aesthetic, minimalist desktop wallpaper dock for Windows. Press a global hotk
 
 ## ✨ Features
 
-- **Global Hotkey**: Press `Alt + Shift` anywhere in Windows to toggle the wallpaper dock.
+- **Double-Click Desktop**: Double-click anywhere on empty desktop wallpaper space to instantly pop up the wallpaper dock. Zero interference when inside games, browsers, or other apps!
+- **Safe Global Hotkey**: Press `Alt + Shift + W` (customizable) to toggle the dock from any application.
 - **Aesthetic Dock UI**: Translucent obsidian backdrop hugging rounded portrait cards with smooth hover elevation and lighting sheen.
 - **Fluid Navigation**:
   - **Mouse Wheel**: Vertical scrolling automatically pans horizontally.
@@ -17,7 +18,7 @@ An aesthetic, minimalist desktop wallpaper dock for Windows. Press a global hotk
 - **Single-Instance Protection**: Named Win32 Mutex prevents duplicate background processes.
 - **Live Folder Watching & Drag-and-Drop**: Monitors your wallpaper directory (`D:\Wallpapers`) and accepts dragged image files directly onto the dock.
 - **Non-blocking Caching**: Generates $2\times$ supersampled thumbnails in background threads for 60 FPS scrolling without UI lag.
-- **System Tray**: Resides quietly in the Windows system tray with a folder picker and "Run at Windows Startup" toggle.
+- **System Tray**: Resides quietly in the Windows system tray with a folder picker, double-click toggle, and "Run at Windows Startup" toggle.
 
 ---
 
@@ -51,7 +52,8 @@ pip install -r requirements.txt
 
 | Action | Control |
 | :--- | :--- |
-| **Toggle Dock** | `Alt + Shift` (or custom hotkey) |
+| **Open on Desktop** | **Double-click empty desktop wallpaper** |
+| **Toggle via Keyboard** | `Alt + Shift + W` (or custom hotkey) |
 | **Scroll Wallpapers** | Mouse Wheel / Click-and-drag / `Left` & `Right` Arrow keys |
 | **Set Wallpaper** | Click any card |
 | **Dismiss Dock** | `Escape` / Click outside / Re-press hotkey |
@@ -66,7 +68,9 @@ On first launch, `config.json` is automatically created at the project root:
 ```json
 {
     "wallpaper_folder": "D:\\Wallpapers",
-    "hotkey": "alt+shift",
+    "hotkey": "alt+shift+w",
+    "enable_hotkey": true,
+    "desktop_double_click": true,
     "card_width": 140,
     "card_height": 230,
     "card_radius": 12,
@@ -76,8 +80,10 @@ On first launch, `config.json` is automatically created at the project root:
 }
 ```
 
+- `desktop_double_click`: Enables opening the selector by double-clicking on empty desktop space (`true`/`false`).
 - `wallpaper_folder`: Directory containing your wallpapers (`.png`, `.jpg`, `.jpeg`, `.webp`, `.bmp`).
-- `hotkey`: Activation shortcut (supports pure modifier combos like `alt+shift` or standard combos like `alt+w`).
+- `hotkey`: Activation keyboard shortcut (default `alt+shift+w`, won't conflict with gaming).
+- `enable_hotkey`: Toggle keyboard hotkey listener (`true`/`false`).
 - `close_on_select`: Automatically dismiss the dock after applying a wallpaper (`true`/`false`).
 
 ---
